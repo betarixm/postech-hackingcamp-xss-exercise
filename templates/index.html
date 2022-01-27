@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <title>Wordle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script>
+        function reset() {
+            window.localStorage.clear();
+            localStorage.setItem("cursor", "0");
+            localStorage.setItem("items", JSON.stringify([]));
+            location.search = "/"
+        }
+
+        function getCursor() {
+            return parseInt(localStorage.getItem("cursor"));
+        }
+
+        function increaseCursor() {
+            localStorage.setItem("cursor", ((getCursor() + 1) % 7).toString());
+        }
+
+        function getItems() {
+            return (JSON.parse(localStorage.getItem("items")));
+        }
+
+        function addItem(item) {
+            localStorage.setItem("items", JSON.stringify([...getItems(), item]));
+        }
+
+        function submit() {
+            if (getCursor() === 6 || isCorrect()) {
+                reset();
+                window.location.reload();
+            } else {
+                increaseCursor();
+                addItem(document.board.word.value);
+                document.board.submit();
+            }
+        }
+
+        function absentTile(value) {
+            let e = document.createElement("div");
+            e.setAttribute("class", "tile");
+            e.setAttribute("data-state", "absent");
+            e.innerHTML = value;
+
+            let i = document.createElement("iframe");
+            i.setAttribute("srcdoc", value);
+
+            e.appendChild(i);
+            return e;
+        }
+
+        function curTile() {
+            let e = document.createElement("input");
+            e.setAttribute("class", "tile");
+            e.setAttribute("data-state", "empty");
+            e.setAttribute("name", "word");
+            return e;
+        }
+
+        function emptyTile() {
+            let e = document.createElement("input");
+            e.setAttribute("class", "tile");
+            e.setAttribute("data-state", "empty");
+            e.setAttribute("readonly", "");
+            return e;
+        }
+
+        function isCorrect() {
+            const url = new URL(window.location.href);
+            return getCursor() > 0 && url.searchParams.get("correct") !== null;
+        }
+
+        function init() {
+            if (localStorage.getItem("cursor") === null) {
+                reset();
+                return;
+            }
+
+            document.board.innerHTML = "";
+
+            const cursor = getCursor();
+            const items = getItems();
+
+            const form = document.board;
+            let last = null;
+
+            items.forEach((i) => {
+                last = form.appendChild(absentTile(i));
+            })
+
+            if (last !== null && isCorrect()) {
+                last.setAttribute("data-state", "correct");
+                form.appendChild(emptyTile());
+            } else if (cursor !== 6) {
+                form.appendChild(curTile());
+            }
+
+            for (let i = 0; i < Math.max(6 - cursor - 1, 0); i++) {
+                form.appendChild(emptyTile());
+            }
+
+            if (cursor === 6 || isCorrect()) {
+                document.getElementById("button").innerText = "RETRY";
+            }
+        }
+
+        window.onpageshow = function (event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+
+    </script>
+</head>
+<body>
+<div class="app">
+    <header>
+        <div class="title">WORDLE</div>
+    </header>
+
+    <div class="container">
+        <form class="board" action={{ url_for("check") }} method="post" name="board">
+            {% if word != None %}
+                <div class="tile" data-state={{ "correct" if is_correct else "absent" }}>{{ word | safe }}</div>
+            {% endif %}
+            <input class="tile" data-state="empty" name="word"/>
+        </form>
+    </div>
+    <div class="keyboard">
+        <button id="button" onclick="document.board.submit()">ENTER</button>
+    </div>
+</div>
+</body>
+</html>
