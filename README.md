@@ -5,7 +5,7 @@
 
 ![Screenshot](README/preview.png)
 
-It is XSS demo page used for "[POSTECH](https://postech.ac.kr) Hacking Camp". — Inspired by WORDLE
+It is XSS exercise page used for "[POSTECH](https://postech.ac.kr) Hacking Camp". — Inspired by WORDLE
 
 ## Objective
 
